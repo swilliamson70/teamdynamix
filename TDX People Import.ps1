@@ -5,7 +5,7 @@ $groups = $Null
 $users = $Null
 
 # $filepath = $env:USERPROFILE + "\Desktop\PeopleImport.csv"
-$filepath = "C:\Users\scott.williamson\Repos\Projects\TDX Utilities\People Import Untility\Pending\PeopleImport_"
+$filepath = $env:USERPROFILE + "\Repos\Projects\TDX Utilities\People Import Untility\Pending\PeopleImport_"
 $filepath = $filepath + (Get-Date -format "yyyyMMddhhmm") + ".csv"
 
 If (Test-Path $filepath) 

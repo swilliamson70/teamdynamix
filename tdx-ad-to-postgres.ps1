@@ -164,7 +164,7 @@ ForEach($user in $users)
     } else { 
     Write-Host("match - no insert")}
     
-    # if($user.SamAccountName.ToLower() -eq "rebecca.harrison"){
+    # if($user.SamAccountName.ToLower() -eq "temp.user"){
     #     exit
     # }
 
