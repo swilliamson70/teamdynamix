@@ -1,16 +1,40 @@
 # tdx-ad-to-postgress.ps1
 # tdx job - AD to postgres localhost:staffdb
 # pulls staff from ad to store in the people table
-# 2023-March SW 
-# note that group membership for Managers, HR, Events, etc. need to be dealth with
+# 2023-March SW
+#  - April 03 sw: changed logic to update on existing upn, need to finish insert logic before next use
+#
+# note that group membership for Managers, HR, Events, etc. need to be dealt with
+# need to add location, department crosswalks - manual correction of csv required until this is complete
 
 Import-Module ActiveDirectory
 
 # Define a ODBC DSN connection string for localhost DSN entry
-# https://www.andersrodland.com/working-with-odbc-connections-in-powershell/
+# (funtions from https://www.andersrodland.com/working-with-odbc-connections-in-powershell/ )
 $ConnectionString = 'DSN=PostgreSQL35W'
 #$Connection = New-Object System.Data.Odbc.OdbcConnection;
 #$Connection.ConnectionString = $ConnectionString
+
+# staffdb/people contains:
+    # samaccountname
+    # userprincipalname
+    # givenname
+    # surname
+    # title
+    # physicaldeliveryofficename
+    # department
+    # employeenumber
+    # telephonenumber
+    # streetaddress
+    # city
+    # state
+    # postalcode
+    # country
+    # manager
+    # technician_group
+    # ad_pull_date
+    # tdx_post_date
+    # changed_code
 
 function Get-ODBC-Data{
     param([string]$query=$(throw 'query is required.'))
@@ -84,7 +108,8 @@ ForEach($user in $users)
             $ManagerUserName = $manager.SamAccountName.ToString() + "@tulsalibrary.org"
         }
 
-    #get people record, if different from db rec insert ad into staffdb/people table
+    # get people record, if different from db rec insert ad into staffdb/people table
+    # 
     $query = "SELECT * FROM people WHERE samaccountname='" + $user.SamAccountName.ToLower() +"'"
     # Write-Host($query)
     $result = Get-ODBC-Data -query $query
@@ -110,54 +135,76 @@ ForEach($user in $users)
         ) {
         Write-Host("no match")
    
-        $query = 
-        "INSERT INTO people (" +
-            "samAccountName," +
-            "userPrincipalName," +
-            "givenName," +
-            "surname," +
-            "title," +
-            "physicalDeliveryOfficeName," +
-            "Department," +
-            "employeeNumber," +
-            "telephoneNumber," +
-            "StreetAddress," +
-            "City," +
-            "State," +
-            "PostalCode," +
-            "Country," +
-            "Manager," +
-            "technician_group," +
-            "ad_pull_date," +
-            "tdx_post_date," + 
-            "ad_changed)"+
-        " VALUES "+
-            "(" +
-            "'" + $user.SamAccountName.ToLower() + "'," +    
-            "'" + $user.UserPrincipalName.ToLower() + "'," +
-            "'" + $user.GivenName + "'," +
-            "E'" + $user.Surname.Replace("'","\'") + "'," +
-            "E'" + $user.Title.Replace("'","\'") + "'," +
-            "'" + $user.physicalDeliveryOfficeName + "'," +
-            "E'" + $user.Department.Replace("'","\'") + "'," +
-            "'" + $user.employeeNumber + "'," +
-            "'" + $user.telephoneNumber + "'," +
-            "'" + $user.StreetAddress + "'," +
-            "'" + $user.City + "'," +
-            "'" + $user.State + "'," +
-            "'" + $user.PostalCode + "'," +
-            "'" + $user.Country + "'," +
-            "'" + $ManagerUserName.ToLower() + "'," +
-            "'" + $technician_group + "'," +
-            #"to_date('" + $date.ToString("yyyy/MM/dd") + "','yyyy/MM/dd')," +
-            "now()," +
-            "NULL," +
-            "'Y')"
+        $query =
+        "UPDATE people SET " +
+            "userPrincipalName = '" + $user.UserPrincipalName.ToLower() + "'," +
+            "givenName = '" + $user.GivenName + "'," +
+            "surname = (E'" + $user.Surname.Replace("'","\'") + "')," +
+            "title = (E'" + $user.Title.Replace("'","\'") + "')," +
+            "physicalDeliveryOfficeName = '" + $user.physicalDeliveryOfficeName + "'," +
+            "Department = (E'" + $user.Department.Replace("'","\'") + "')," +
+            "employeeNumber = '" + $user.employeeNumber + "'," +
+            "telephoneNumber = '" + $user.telephoneNumber + "'," +
+            "StreetAddress = '" + $user.StreetAddress + "'," +
+            "City = '" + $user.City + "'," +
+            "State = '" + $user.State + "'," +
+            "PostalCode = '" + $user.PostalCode + "'," +
+            "Country = '" + $user.Country + "'," +
+            "Manager = '" + $ManagerUserName.ToLower() + "'," +
+            "technician_group = '" + $technician_group + "'," +
+            "ad_pull_date = now()," +
+            "tdx_post_date = NULL" + 
+            "changed_flag = 'Y'"+
+        " WHERE "+
+            "samAccountName = " + $result.samaccountname
+
+        # "INSERT INTO people (" +
+        #     "samAccountName," +
+        #     "userPrincipalName," +
+        #     "givenName," +
+        #     "surname," +
+        #     "title," +
+        #     "physicalDeliveryOfficeName," +
+        #     "Department," +
+        #     "employeeNumber," +
+        #     "telephoneNumber," +
+        #     "StreetAddress," +
+        #     "City," +
+        #     "State," +
+        #     "PostalCode," +
+        #     "Country," +
+        #     "Manager," +
+        #     "technician_group," +
+        #     "ad_pull_date," +
+        #     "tdx_post_date," + 
+        #     "ad_changed)"+
+        # " VALUES "+
+        #     "(" +
+        #     "'" + $user.SamAccountName.ToLower() + "'," +    
+        #     "'" + $user.UserPrincipalName.ToLower() + "'," +
+        #     "'" + $user.GivenName + "'," +
+        #     "E'" + $user.Surname.Replace("'","\'") + "'," +
+        #     "E'" + $user.Title.Replace("'","\'") + "'," +
+        #     "'" + $user.physicalDeliveryOfficeName + "'," +
+        #     "E'" + $user.Department.Replace("'","\'") + "'," +
+        #     "'" + $user.employeeNumber + "'," +
+        #     "'" + $user.telephoneNumber + "'," +
+        #     "'" + $user.StreetAddress + "'," +
+        #     "'" + $user.City + "'," +
+        #     "'" + $user.State + "'," +
+        #     "'" + $user.PostalCode + "'," +
+        #     "'" + $user.Country + "'," +
+        #     "'" + $ManagerUserName.ToLower() + "'," +
+        #     "'" + $technician_group + "'," +
+        #     #"to_date('" + $date.ToString("yyyy/MM/dd") + "','yyyy/MM/dd')," +
+        #     "now()," +
+        #     "NULL," +
+        #     "'Y')"
         
         #try to open connection and write record    
         Write-Host("Insert: " + $query)
         
-        set-odbc-data -query $query
+        # set-odbc-data -query $query
         Write-Host("after insert")
     
 
