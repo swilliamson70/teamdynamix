@@ -4,7 +4,7 @@
 # 2023-March SW
 #  - April 03 sw: changed logic to update on existing upn, need to finish insert logic before next use
 #
-# note that group membership for Managers, HR, Events, etc. need to be dealt with
+# note that group membership for Managers, HR, Events, etc. need to be dealt with when postgress-to-TDX is written
 # need to add location, department crosswalks - manual correction of csv required until this is complete
 
 Import-Module ActiveDirectory

@@ -1,0 +1,1 @@
+select * from  sys.fn_my_permissions(null, 'SERVER');

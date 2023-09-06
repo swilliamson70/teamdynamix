@@ -1,6 +1,6 @@
 ﻿# TDX People Import
 # 2023-08-23sw Added crosswalks for Acct/Dept and Location,
-# need to add email replacement for legacy user accounts (133 non-IT users)
+#              Added email replacement for legacy user accounts (133 non-IT users)
 
 Import-Module ActiveDirectory
 
