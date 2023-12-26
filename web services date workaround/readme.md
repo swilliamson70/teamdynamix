@@ -11,6 +11,7 @@ A workaround is to send the date to a function ahead of the call to create the t
 
 The function was set up in AWS as a Lambda function and tested successfully:
 
+```
 import json
 import datetime
 
@@ -35,3 +36,4 @@ def lambda_handler(event, context):
     dictReturn = {'yourDate': returnDate}
     jsonReturn = json.dumps(dictReturn)
     return jsonReturn
+```
