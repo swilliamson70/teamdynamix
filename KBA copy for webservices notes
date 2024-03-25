@@ -1,0 +1,119 @@
+Webservices
+Notes taken when setting up webservice in the Sandbox
+TDX KBA Web Service Steps: https://solutions.teamdynamix.com/TDClient/1965/Portal/KB/ArticleDet?ID=50115
+
+Set up service account (this is done in prod and sandbox, skip)
+
+Goto Admin > Users 
+
++Create > Create Service Account
+
+Username: <your webservice account name>
+Fname, Lname: TDX Webservice
+Auth Username:
+Security Role: Enterprise - Full Access
+Password: (use standard)
+Leave 'This account is exempt' checked
+
+Open account to give application access as 'Enterprise - Full Access' in appropriate ticketing applications
+
+Add Workflow Web Services in Ticketing Application
+
+Goto Admin > Applications > Ticketing Application > Workflow Web Services
+
+Add to Web Service Auth Accounts
+
++New
+Name: tdx_webservice
+Account Type: TeamDynamix Web API
+​​​​​​Active: Checked
+Certificate Validation: Enabled
+TeamDynamix Web API URL: (sandbox:) https://<your company>.teamdynamix.com/SBTDWebApi/ (or prod: https://<your company>.teamdynamix.com/TDWebApi/)
+Username/password (from above): <your webservice account name>
+
+Add to Web Service Providers 
+
++New
+Name: TeamDynamix (or whatever)
+Base Web Service Provider URL: (sandbox:) https://<your company>.teamdynamix.com/SBTDWebApi/ (or prod: https://<your company>.teamdynamix.com/TDWebApi/)
+Active: Checked
+
+Add to Web Services Methods - API docs: https://<your company>.teamdynamix.com/SBTDWebApi/ - drill down to endpoint def, copy endpoint from there
+
+Generally:
++New
+Name: Description of Action
+Web Service Provider: TeamDynamix (from above)
+Method (dropdown)/Headers/Parameters/Body - depends on which endpoint/action needed
+​​​​​​​Method/URL: Patch https://.teamdynamix.com/TDWebApi/api/103/tickets/{{id}} 
+Authentication: <your webservice account name> (from above)
+
+Example (this was set up with TDX\Kelsie on a call): 
+Web service method: Update Department to ESM
+​​​​​​​Method/URL: Patch https://ourcompany.teamdynamix.com/TDWebApi/api/103/tickets/{{id}} 
+Headers key/value: content-type application/json
+​​​​​​​Parameters Name: id, Data Type: String, Source: From Ticket, Source Property: ID​​​​​​
+Body: [ {"op": "replace", "path": "/AccountID", "value": "6514"}, ]  
+- operation: replace, path: /AccountID {this is the value being replaced}, value: 6514 {this is item number of the location 'ECM'}
+
+New Web Service: Create AV Ticket for Event Request -  
+TDX KBA: Using Web Services to Create a Second Ticket​​​​​​​: https://solutions.teamdynamix.com/TDClient/1965/Portal/KB/ArticleDet?ID=18608
+
+Ticketing app IDs: Facilities Tickets ID: 390, IT: 103 (Admin > Applications > ticketing app > Details)
+IT Ticket app, Status ID: 773 (New) (Admin > Applications > ticketing app > Statuses)
+IT Ticket type for AV: 1138 (AV Service Request) (Admin > Applications > ticketing app > Types)
+IT Ticket form for AV request: 2639 (Request A/V Services - Form) (Admin > Applications > ticketing app > Forms)
+Shared Ticket Settings > Sources: 354 (Other) (Admin > Applications > ticketing app > Shared Ticketing Settings > Sources)
+
+Shared Ticket Settings > Priority: 284 (Medium) -- created parm in web service setup to copy orig ticket priority but needed for testing
+Ticket Classification ID: 46 (Service Request) - https://ourcompany.teamdynamix.com/TDWebApi/Home/type/TeamDynamix.Api.Tickets.TicketClass
+​​​​​​​Ticket Requestor ID: {{RequestorUID}}
+
+https://ourcompany.teamdynamix.com/SBTDWebApi/api/103/tickets?EnableNotifyReviewer={EnableNotifyReviewer}&NotifyRequestor={NotifyRequestor}&NotifyResponsible={NotifyResponsible}&AllowRequestorCreation={AllowRequestorCreation}&applyDefaults={applyDefaults}
+
+Create the web service method:
+
+Method: POST
+URL: https://ourcompany.teamdynamix/SBTDWebApi/api/103/tickets
+
+Headers:
+- Key: Content-type
+- Value: application/json
+
+Parameters:
+- Name: OrigTicketID
+​​​​​​​     - Type: String
+     - Data source: From Ticket
+     - Source property: ID
+ - Name OrigTicketAcct
+​​​​​​​     - Type: String
+     - Data source: From Ticket
+     - Source property: Acct/Dept
+ - Name OrigTicketPriority
+​​​​​​​     - Type: String
+     - Data source: From Ticket
+     - Source property: Priority
+ - Name OrigTicketRequestorUID
+​​​​​​​     - Type: String
+     - Data source: From Ticket
+     - Source property: Requestor UID
+
+Body (json package):
+
+{
+"TypeID": "1138", 
+"FormID": "2639",
+"Title": "Event Request from Facilities Ticket",
+"Description": "Created from Facilities Ticket {{OrigTicketID}}",
+"AccountID":  "{{OrigTicketAcct}}",
+"SourceID": "354",
+"PriorityID": "{{OrigTicketPriority}}",
+"RequestorUID": "{{OrigTicketRequestorUID}}"
+}
+
+Authentication:
+tdx_webservice
+
+Save and Test
+
+Testing note: Because the Requestor UID is used above, it's necessary to make a Get request from TDX for the employee list using Postman - the user account UIDs are not visible in the UI. There is a json attached to this KBA with the current user list with UIDs.
